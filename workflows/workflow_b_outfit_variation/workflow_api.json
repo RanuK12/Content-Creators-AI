@@ -1,0 +1,182 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors",
+      "vae_name": "flux-vae.safetensors"
+    },
+    "class_type": "CheckpointLoader",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "2": {
+    "inputs": {
+      "lora_name": "nova_character_flux_lora.safetensors",
+      "strength_model": 0.6,
+      "strength_clip": 0.6,
+      "model": [
+        "1",
+        0
+      ],
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA - Nova Character"
+    }
+  },
+  "3": {
+    "inputs": {
+      "image": "nova_base_image.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Base Image"
+    }
+  },
+  "4": {
+    "inputs": {
+      "image": "nova_mask.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Mask (Outfit Area)"
+    }
+  },
+  "5": {
+    "inputs": {
+      "control_net_name": "controlnet-depth-sdxl.safetensors",
+      "image": [
+        "3",
+        0
+      ],
+      "strength": 0.7
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Depth"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "nova_character, beautiful young woman, wearing red summer dress, standing pose, soft lighting, 8k, detailed skin, professional photography",
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt - New Outfit"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, low quality, deformed, ugly, bad anatomy, watermark, signature",
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "8": {
+    "inputs": {
+      "pixels": [
+        "3",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "Encode Base Image"
+    }
+  },
+  "9": {
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "mask": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SetLatentNoiseMask",
+    "_meta": {
+      "title": "Set Mask"
+    }
+  },
+  "10": {
+    "inputs": {
+      "seed": -1,
+      "steps": 25,
+      "cfg": 3.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.75,
+      "model": [
+        "2",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler - Inpaint"
+    }
+  },
+  "11": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "12": {
+    "inputs": {
+      "filename_prefix": "nova_outfit",
+      "images": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}

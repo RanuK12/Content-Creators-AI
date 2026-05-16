@@ -1,0 +1,56 @@
+project:
+  name: "VirtualContentPipeline"
+  version: "1.0.0"
+
+comfyui:
+  host: "127.0.0.1"
+  port: 8188
+  workflow_dir: "./workflows"
+  models_dir: "./config/models"
+  vram_mode: "normal"  # normal, low, high
+
+kling_api:
+  base_url: "https://api.klingai.com"
+  timeout: 300
+  max_retries: 3
+  backoff_factor: 2
+
+output:
+  base_dir: "./data/output"
+  formats:
+    image: ["png", "jpg", "webp"]
+    video: ["mp4", "mov"]
+  resolutions:
+    instagram_feed: [1080, 1080]
+    instagram_reel: [1080, 1920]
+    tiktok: [1080, 1920]
+    twitter: [1200, 675]
+    patreon: [1080, 1920]
+
+watermark:
+  text: "AI Generated • Virtual Character"
+  font_size: 24
+  opacity: 0.7
+  position: "bottom_right"  # top_left, top_right, bottom_left, bottom_right, center
+  color: "#FFFFFF"
+
+character:
+  name: "Nova"
+  style: "photorealistic"
+  base_prompt: "beautiful young woman, photorealistic, 8k, detailed skin, professional photography"
+  negative_prompt: "blurry, low quality, deformed, ugly, bad anatomy, watermark, signature"
+  lora_trigger: "nova_character"
+
+training:
+  kohya_ss_path: "./tools/kohya_ss"
+  base_model: "flux1-dev.safetensors"
+  resolution: 1024
+  batch_size: 2
+  learning_rate: 1e-4
+  max_train_steps: 2000
+  save_every_n_epochs: 1
+
+logging:
+  level: "INFO"
+  file: "./logs/pipeline.log"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"

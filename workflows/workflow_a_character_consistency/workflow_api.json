@@ -1,0 +1,185 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors",
+      "vae_name": "flux-vae.safetensors"
+    },
+    "class_type": "CheckpointLoader",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "2": {
+    "inputs": {
+      "lora_name": "nova_character_flux_lora.safetensors",
+      "strength_model": 0.7,
+      "strength_clip": 0.7,
+      "model": [
+        "1",
+        0
+      ],
+      "clip": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA - Nova Character"
+    }
+  },
+  "3": {
+    "inputs": {
+      "pulid_file": "pulid_flux_v0.9.1.safetensors",
+      "model": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "PulidFluxModelLoader",
+    "_meta": {
+      "title": "Load PuLID Model"
+    }
+  },
+  "4": {
+    "inputs": {
+      "image": "nova_reference_face.png",
+      "width": 1024,
+      "height": 1024
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Reference Face"
+    }
+  },
+  "5": {
+    "inputs": {
+      "image": [
+        "4",
+        0
+      ],
+      "model": [
+        "3",
+        0
+      ],
+      "face_analysis": "retinaface"
+    },
+    "class_type": "PulidFluxInsightFaceLoader",
+    "_meta": {
+      "title": "PuLID Face Analysis"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "nova_character, beautiful young woman, portrait, soft lighting, 8k, detailed skin, professional photography, looking at viewer, slight smile",
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, low quality, deformed, ugly, bad anatomy, watermark, signature, extra limbs, mutated hands",
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "8": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "9": {
+    "inputs": {
+      "seed": -1,
+      "steps": 28,
+      "cfg": 3.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "model": [
+        "5",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler - Main"
+    }
+  },
+  "10": {
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "nova_batch",
+      "images": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "12": {
+    "inputs": {
+      "control_net_name": "controlnet-union-sdxl-promax.safetensors",
+      "image": "nova_openpose.png",
+      "strength": 0.8,
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "positive": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "ControlNetApply",
+    "_meta": {
+      "title": "ControlNet - OpenPose"
+    }
+  }
+}

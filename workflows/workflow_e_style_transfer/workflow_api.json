@@ -1,0 +1,156 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "_meta": {
+      "title": "Load RealVisXL V4.0 Checkpoint"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity_v2.safetensors",
+      "strength_model": 0.85,
+      "strength_clip": 0.80
+    },
+    "_meta": {
+      "title": "Identity LoRA - Character Preservation"
+    }
+  },
+  "3": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": ["2", 0],
+      "clip": ["2", 1],
+      "lora_name": "oil_painting_style_v1.safetensors",
+      "strength_model": 0.65,
+      "strength_clip": 0.60
+    },
+    "_meta": {
+      "title": "Style LoRA - Artistic Style Transfer"
+    }
+  },
+  "4": {
+    "class_type": "IPAdapterFaceIDLoader",
+    "inputs": {
+      "model": "ip-adapter-faceid-plusv2_sdxl.bin",
+      "lora": "ip-adapter-faceid-plusv2_sdxl_lora.safetensors"
+    },
+    "_meta": {
+      "title": "Load IP-Adapter FaceID Plus V2"
+    }
+  },
+  "5": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "reference_face.png"
+    },
+    "_meta": {
+      "title": "Load Reference Face Image"
+    }
+  },
+  "6": {
+    "class_type": "IPAdapterFaceIDApply",
+    "inputs": {
+      "model": ["3", 0],
+      "ipadapter": ["4", 0],
+      "image": ["5", 0],
+      "weight": 0.70,
+      "noise": 0.2,
+      "weight_type": "linear",
+      "start_at": 0.0,
+      "end_at": 0.85
+    },
+    "_meta": {
+      "title": "Apply IP-Adapter FaceID for Identity Lock"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "portrait of character_name in oil painting style, rich brushstrokes, dramatic lighting, renaissance composition, fine art, masterpiece quality, gallery worthy"
+    },
+    "_meta": {
+      "title": "Positive Prompt - Style Transfer"
+    }
+  },
+  "8": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "photograph, photorealistic, blurry, deformed face, bad anatomy, extra fingers, low quality, watermark, text, signature, ugly"
+    },
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "9": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "Latent Image (1:1)"
+    }
+  },
+  "10": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["6", 0],
+      "positive": ["7", 0],
+      "negative": ["8", 0],
+      "latent_image": ["9", 0],
+      "seed": 42,
+      "steps": 35,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "KSampler - Style Transfer Generation"
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["10", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "12": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["11", 0],
+      "filename_prefix": "style_transfer"
+    },
+    "_meta": {
+      "title": "Save Style Transfer Result"
+    }
+  },
+  "_meta": {
+    "title": "Workflow E - Style Transfer with Identity Preservation",
+    "description": "Applies artistic style transfer while preserving character identity through a combination of identity LoRA, style LoRA, and IP-Adapter FaceID. The identity LoRA maintains facial features, the style LoRA provides artistic transformation, and IP-Adapter FaceID acts as a safety net for identity lock.",
+    "research_note": "Key insight: Identity LoRA must load BEFORE style LoRA to establish the identity baseline. IP-Adapter FaceID weight of 0.70 balances identity preservation vs. style freedom. Setting end_at=0.85 allows final denoising steps to refine style without face constraints. Style LoRA weight above 0.70 tends to override identity - keep at 0.60-0.65 for best results.",
+    "version": "1.0",
+    "author": "Content-Creators-AI",
+    "compatible_models": ["RealVisXL_V4.0.safetensors"],
+    "style_loras_tested": [
+      "oil_painting_style_v1.safetensors",
+      "watercolor_artistic_v2.safetensors",
+      "anime_crossover_v1.safetensors",
+      "cyberpunk_neon_v1.safetensors"
+    ],
+    "vram_requirement_gb": 14
+  }
+}

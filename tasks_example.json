@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "description": "Example task file for pipeline orchestrator",
+  "created": "2024-01-15",
+  "tasks": [
+    {
+      "character_name": "elena_frost",
+      "workflow_path": "workflows/workflow_a_character_consistency/workflow_api.json",
+      "prompts": [
+        "portrait photo of elena_frost, professional studio lighting, soft bokeh background, wearing a white silk blouse, confident expression, sharp focus, 8k uhd",
+        "elena_frost in a modern coffee shop, natural window light, casual outfit with denim jacket, candid pose, warm color grading, lifestyle photography",
+        "close-up beauty shot of elena_frost, golden hour sunlight, minimal makeup, wind in hair, editorial fashion photography, shallow depth of field",
+        "elena_frost full body shot, urban rooftop at sunset, elegant black dress, city skyline background, cinematic composition, magazine quality"
+      ],
+      "lora_name": "elena_frost_v2.safetensors",
+      "lora_weight": 0.85,
+      "seeds": [42, 123, 456, 789, 1024, 2048],
+      "generate_video": true,
+      "video_prompt": "Cinematic portrait of elena_frost with subtle natural movement, hair gently moving in breeze, soft smile, photorealistic, 4k quality",
+      "video_duration": 5.0,
+      "camera_movement": "slow_zoom_in",
+      "platforms": ["instagram", "twitter", "portfolio"]
+    },
+    {
+      "character_name": "marcus_chen",
+      "workflow_path": "workflows/workflow_b_outfit_variation/workflow_api.json",
+      "prompts": [
+        "marcus_chen wearing a tailored navy suit, modern office environment, professional headshot, natural lighting, clean background, sharp focus",
+        "casual photo of marcus_chen in streetwear, urban graffiti wall background, relaxed confident pose, golden hour, street photography style",
+        "marcus_chen at a beach during blue hour, linen shirt unbuttoned, ocean waves in background, moody cinematic lighting, editorial portrait"
+      ],
+      "lora_name": "marcus_chen_v1.safetensors",
+      "lora_weight": 0.82,
+      "seeds": [101, 202, 303, 404, 505],
+      "generate_video": true,
+      "video_prompt": "marcus_chen looking at camera with confident expression, subtle head turn, natural lighting, photorealistic movement, cinematic depth of field",
+      "video_duration": 5.0,
+      "camera_movement": "orbit",
+      "platforms": ["instagram", "twitter"]
+    }
+  ]
+}

@@ -1,13 +1,36 @@
-__pycache__/
-*.py[cod]
-*$py.class
+# Environment
 .env
-.venv/
-env/
 venv/
-ENV/
-env.bak/
-venv.bak/
-.idea/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Models (too large for git)
+models/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+
+# Output
+output/
+temp/
+logs/
+
+# Datasets (large files)
+datasets/
+
+# IDE
 .vscode/
-*.log
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

@@ -1,0 +1,203 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "_meta": {
+      "title": "Load RealVisXL V4.0 Checkpoint (Inpainting)"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "source_image.png"
+    },
+    "_meta": {
+      "title": "Load Source Image for Inpainting"
+    }
+  },
+  "3": {
+    "class_type": "SAMModelLoader",
+    "inputs": {
+      "model_name": "sam_vit_h_4b8939.pth"
+    },
+    "_meta": {
+      "title": "Load SAM Model (ViT-H)"
+    }
+  },
+  "4": {
+    "class_type": "GroundingDinoModelLoader",
+    "inputs": {
+      "model_name": "GroundingDINO_SwinT_OGC.pth"
+    },
+    "_meta": {
+      "title": "Load GroundingDINO Model"
+    }
+  },
+  "5": {
+    "class_type": "GroundingDinoSAMSegment",
+    "inputs": {
+      "sam_model": ["3", 0],
+      "grounding_dino_model": ["4", 0],
+      "image": ["2", 0],
+      "prompt": "clothing, shirt, top garment",
+      "threshold": 0.3
+    },
+    "_meta": {
+      "title": "Auto-Segment Target Region (Clothing)"
+    }
+  },
+  "6": {
+    "class_type": "InvertMask",
+    "inputs": {
+      "mask": ["5", 1]
+    },
+    "_meta": {
+      "title": "Invert Mask (Inpaint Target Region)"
+    }
+  },
+  "7": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": ["5", 1],
+      "expand": 12,
+      "tapered_corners": true
+    },
+    "_meta": {
+      "title": "Grow Mask (Feathered Edges)"
+    }
+  },
+  "8": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity_v2.safetensors",
+      "strength_model": 0.75,
+      "strength_clip": 0.70
+    },
+    "_meta": {
+      "title": "Identity LoRA (Preserve Character During Inpaint)"
+    }
+  },
+  "9": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["2", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "VAE Encode Source Image"
+    }
+  },
+  "10": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": {
+      "samples": ["9", 0],
+      "mask": ["7", 0]
+    },
+    "_meta": {
+      "title": "Apply Grown Mask to Latent"
+    }
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["8", 1],
+      "text": "character_name wearing an elegant red evening gown, silk fabric, detailed texture, professional fashion photography, studio lighting, high quality"
+    },
+    "_meta": {
+      "title": "Positive Prompt - Inpaint Content"
+    }
+  },
+  "12": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["8", 1],
+      "text": "blurry, low quality, deformed, bad anatomy, wrong proportions, mismatched skin tone, artifacts, seam visible, painting, illustration"
+    },
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "13": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["8", 0],
+      "positive": ["11", 0],
+      "negative": ["12", 0],
+      "latent_image": ["10", 0],
+      "seed": 42,
+      "steps": 35,
+      "cfg": 7.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.75
+    },
+    "_meta": {
+      "title": "KSampler - Inpainting (denoise=0.75)"
+    }
+  },
+  "14": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["13", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "VAE Decode Inpainted Result"
+    }
+  },
+  "15": {
+    "class_type": "ImageCompositeMasked",
+    "inputs": {
+      "destination": ["2", 0],
+      "source": ["14", 0],
+      "mask": ["7", 0],
+      "x": 0,
+      "y": 0,
+      "resize_source": false
+    },
+    "_meta": {
+      "title": "Composite Inpainted Region onto Original"
+    }
+  },
+  "16": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["15", 0],
+      "filename_prefix": "inpaint_advanced"
+    },
+    "_meta": {
+      "title": "Save Final Inpainted Image"
+    }
+  },
+  "17": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["5", 0],
+      "filename_prefix": "inpaint_mask_preview"
+    },
+    "_meta": {
+      "title": "Save Mask Preview (Debug)"
+    }
+  },
+  "_meta": {
+    "title": "Workflow F - Advanced Inpainting with Auto-Segmentation",
+    "description": "Performs targeted inpainting using automatic segmentation via SAM (Segment Anything Model) and GroundingDINO for text-guided region detection. The pipeline: 1) Detect target region with GroundingDINO text prompt, 2) Generate precise mask with SAM, 3) Grow mask for feathered edges, 4) Inpaint with identity-preserving LoRA. This enables outfit changes, background modifications, and accessory additions without manual mask drawing.",
+    "research_note": "Denoise strength of 0.75 provides good balance between new content generation and source image coherence. Lower values (0.5-0.6) preserve more original detail but may produce blending artifacts. Mask growth of 12px with tapered corners prevents hard seam lines. GroundingDINO threshold of 0.3 is permissive — increase to 0.5 for more precise but potentially incomplete masks. The identity LoRA at 0.75 ensures the character's face/body proportions remain consistent even when inpainting adjacent regions.",
+    "version": "1.0",
+    "author": "Content-Creators-AI",
+    "compatible_models": ["RealVisXL_V4.0.safetensors", "flux1-dev-fp8.safetensors"],
+    "segmentation_prompts_tested": [
+      "clothing, shirt, top garment",
+      "background, wall, scenery",
+      "hair, hairstyle",
+      "accessories, jewelry, necklace",
+      "shoes, footwear"
+    ],
+    "vram_requirement_gb": 18,
+    "dependencies": ["segment-anything", "groundingdino"]
+  }
+}

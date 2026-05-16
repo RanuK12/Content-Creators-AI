@@ -1,56 +1,359 @@
-project:
-  name: "VirtualContentPipeline"
-  version: "1.0.0"
+# =============================================================================
+# Content-Creators-AI - Master Configuration
+# =============================================================================
+# Production configuration for AI art pipeline with RTX 4090 hardware.
+# All paths are relative to project root unless otherwise specified.
 
+project:
+  name: "Content-Creators-AI"
+  version: "1.0.0"
+  description: "Automated AI influencer content generation pipeline"
+  environment: "production"
+  timezone: "UTC"
+
+# =============================================================================
+# Hardware Configuration
+# =============================================================================
+hardware:
+  gpu: "RTX 4090"
+  vram_gb: 24
+  ram_gb: 64
+  storage_type: "NVMe SSD"
+  max_batch_size: 4
+  cuda_version: "12.1"
+  precision: "fp16"
+  enable_xformers: true
+  enable_flash_attention: true
+
+# =============================================================================
+# ComfyUI Configuration
+# =============================================================================
 comfyui:
   host: "127.0.0.1"
   port: 8188
-  workflow_dir: "./workflows"
-  models_dir: "./config/models"
-  vram_mode: "normal"  # normal, low, high
-
-kling_api:
-  base_url: "https://api.klingai.com"
   timeout: 300
   max_retries: 3
-  backoff_factor: 2
+  retry_delay: 5
+  websocket_timeout: 600
+  queue_size: 10
+  client_id: "content-creators-pipeline"
+  workflows_dir: "workflows"
+  checkpoints_dir: "models/checkpoints"
+  loras_dir: "models/loras"
 
-output:
-  base_dir: "./data/output"
-  formats:
-    image: ["png", "jpg", "webp"]
-    video: ["mp4", "mov"]
-  resolutions:
-    instagram_feed: [1080, 1080]
-    instagram_reel: [1080, 1920]
-    tiktok: [1080, 1920]
-    twitter: [1200, 675]
-    patreon: [1080, 1920]
+# =============================================================================
+# Model Configuration
+# =============================================================================
+models:
+  primary:
+    name: "flux1-dev"
+    file: "flux1-dev-fp8.safetensors"
+    precision: "fp8"
+    type: "flux"
+    vram_usage_gb: 12
 
-watermark:
-  text: "AI Generated • Virtual Character"
-  font_size: 24
-  opacity: 0.7
-  position: "bottom_right"  # top_left, top_right, bottom_left, bottom_right, center
-  color: "#FFFFFF"
+  fallback:
+    name: "RealVisXL"
+    file: "RealVisXL_V4.0.safetensors"
+    precision: "fp16"
+    type: "sdxl"
+    vram_usage_gb: 8
 
-character:
-  name: "Nova"
-  style: "photorealistic"
-  base_prompt: "beautiful young woman, photorealistic, 8k, detailed skin, professional photography"
-  negative_prompt: "blurry, low quality, deformed, ugly, bad anatomy, watermark, signature"
-  lora_trigger: "nova_character"
+  face_preservation:
+    pulid:
+      weight: 0.75
+      model: "pulid_flux_v0.9.1.safetensors"
+      method: "fidelity"
+      start_step: 0
+      end_step: 1.0
+    ip_adapter:
+      weight: 0.65
+      model: "ip-adapter-faceid-plusv2_sdxl.bin"
+      noise_strength: 0.3
+    instant_id:
+      weight: 0.80
+      model: "instantid-ip-adapter.bin"
+      control_weight: 0.85
 
+  controlnet:
+    openpose:
+      weight: 0.70
+      model: "control-lora-openposeXL2-rank256.safetensors"
+    depth:
+      weight: 0.55
+      model: "diffusers_xl_depth_full.safetensors"
+    canny:
+      weight: 0.60
+      model: "control-lora-canny-rank256.safetensors"
+
+# =============================================================================
+# Training Configuration (Kohya ss)
+# =============================================================================
 training:
-  kohya_ss_path: "./tools/kohya_ss"
-  base_model: "flux1-dev.safetensors"
-  resolution: 1024
-  batch_size: 2
-  learning_rate: 1e-4
-  max_train_steps: 2000
-  save_every_n_epochs: 1
+  framework: "kohya_ss"
+  method: "LoRA"
 
+  hyperparameters:
+    network_dim: 32
+    network_alpha: 16
+    learning_rate: 0.0001
+    unet_lr: 0.0001
+    text_encoder_lr: 0.00005
+    scheduler: "cosine_with_restarts"
+    num_cycles: 3
+    warmup_ratio: 0.05
+    optimizer: "AdamW8bit"
+    batch_size: 2
+    max_train_steps: 3000
+    save_every_n_steps: 500
+    gradient_accumulation_steps: 4
+    gradient_checkpointing: true
+    mixed_precision: "fp16"
+    clip_skip: 2
+    noise_offset: 0.05
+    adaptive_noise_scale: 0.00357
+    min_snr_gamma: 5
+    resolution: 1024
+    bucket_reso_steps: 64
+    enable_bucket: true
+    max_bucket_reso: 2048
+    min_bucket_reso: 512
+
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+    monitor: "loss"
+
+  sample_prompts:
+    - "portrait photo of {name}, professional lighting, sharp focus, 8k"
+    - "{name} in casual outfit, natural outdoor setting, golden hour"
+    - "close-up of {name}, studio lighting, neutral background"
+    - "{name} full body shot, urban environment, street photography style"
+
+  regularization:
+    enabled: true
+    images_per_class: 200
+    class_token: "person"
+
+# =============================================================================
+# Kling API Configuration
+# =============================================================================
+kling:
+  base_url: "https://api.klingai.com/v1"
+  api_version: "v1"
+  polling:
+    interval: 10
+    max_wait: 600
+    backoff_factor: 1.5
+  duration:
+    short: 5
+    standard: 10
+  aspect_ratios:
+    - "16:9"
+    - "9:16"
+    - "1:1"
+  camera_movements:
+    - "static"
+    - "slow_zoom_in"
+    - "slow_zoom_out"
+    - "pan_left"
+    - "pan_right"
+    - "tilt_up"
+    - "tilt_down"
+    - "orbit"
+  max_concurrent: 3
+  rate_limit_per_minute: 10
+
+# =============================================================================
+# Post-Production Configuration
+# =============================================================================
+post_production:
+  watermark:
+    enabled: true
+    text: "@ai_character"
+    font_size: 24
+    opacity: 0.4
+    position: "bottom_right"
+    margin: 20
+    font: "fonts/Inter-Regular.ttf"
+    color: [255, 255, 255]
+    shadow: true
+    shadow_offset: 2
+
+  resize_presets:
+    instagram:
+      feed:
+        width: 1080
+        height: 1080
+        format: "jpg"
+        quality: 95
+      story:
+        width: 1080
+        height: 1920
+        format: "jpg"
+        quality: 90
+      reel:
+        width: 1080
+        height: 1920
+        format: "mp4"
+        fps: 30
+
+    twitter:
+      post:
+        width: 1200
+        height: 675
+        format: "jpg"
+        quality: 92
+      header:
+        width: 1500
+        height: 500
+        format: "png"
+        quality: 100
+
+    portfolio:
+      full:
+        width: 2048
+        height: 2048
+        format: "png"
+        quality: 100
+      web:
+        width: 1920
+        height: 1080
+        format: "jpg"
+        quality: 95
+
+  ffmpeg:
+    codec: "libx264"
+    crf: 18
+    preset: "slow"
+    audio_codec: "aac"
+    audio_bitrate: "192k"
+    pixel_format: "yuv420p"
+    max_resolution: 2160
+    thumbnail_format: "jpg"
+    thumbnail_quality: 90
+
+# =============================================================================
+# Evaluation Configuration
+# =============================================================================
+evaluation:
+  facial_consistency:
+    threshold: 0.85
+    model: "buffalo_l"
+    det_size: [640, 640]
+    reference_count: 5
+    similarity_metric: "cosine"
+    min_face_size: 64
+    max_faces_per_image: 1
+
+  image_quality:
+    min_resolution: 1024
+    sharpness_threshold: 100.0
+    noise_threshold: 30.0
+    exposure_range: [0.2, 0.8]
+    aesthetic_score_threshold: 6.0
+    clip_score_threshold: 0.25
+    artifact_detection: true
+
+  video_quality:
+    min_fps: 24
+    temporal_consistency: 0.80
+    motion_smoothness: 0.75
+    frame_quality_threshold: 0.80
+    flicker_detection: true
+
+# =============================================================================
+# Scheduling Configuration
+# =============================================================================
+scheduling:
+  platforms:
+    instagram:
+      posts_per_day: 2
+      best_hours: [9, 12, 17, 20]
+      content_ratio:
+        photos: 0.5
+        reels: 0.3
+        stories: 0.2
+      hashtag_limit: 30
+      caption_max_length: 2200
+
+    twitter:
+      posts_per_day: 4
+      best_hours: [8, 12, 15, 18, 21]
+      content_ratio:
+        images: 0.6
+        videos: 0.2
+        threads: 0.2
+      character_limit: 280
+
+    tiktok:
+      posts_per_day: 1
+      best_hours: [11, 14, 19, 22]
+      content_ratio:
+        short_form: 0.7
+        transitions: 0.2
+        behind_scenes: 0.1
+      max_duration: 60
+
+  rotation:
+    characters_per_day: 2
+    min_gap_hours: 4
+    variety_weight: 0.7
+
+# =============================================================================
+# Publishing Configuration
+# =============================================================================
+publishing:
+  api_versions:
+    instagram: "v18.0"
+    twitter: "v2"
+    tiktok: "v1"
+
+  retry:
+    max_attempts: 3
+    backoff_factor: 2
+    timeout: 30
+
+  rate_limits:
+    instagram:
+      hourly: 25
+      daily: 100
+    twitter:
+      per_15_min: 50
+      daily: 500
+
+  content:
+    auto_hashtags: true
+    auto_caption: true
+    disclosure_text: "AI-generated content"
+    disclosure_required: true
+
+# =============================================================================
+# Paths Configuration
+# =============================================================================
+paths:
+  output: "output"
+  references: "data/references"
+  datasets: "data/datasets"
+  models: "models"
+  loras: "models/loras"
+  checkpoints: "models/checkpoints"
+  workflows: "workflows"
+  logs: "logs"
+  temp: "temp"
+  cache: ".cache"
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
 logging:
   level: "INFO"
-  file: "./logs/pipeline.log"
-  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {name}:{function}:{line} - {message}"
+  rotation: "50 MB"
+  retention: "30 days"
+  compression: "gz"
+  console: true
+  file: "logs/pipeline.log"
+  structured: true
+  serialize: false

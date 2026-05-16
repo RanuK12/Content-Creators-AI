@@ -1,269 +1,284 @@
-# 🤖 Virtual Content Pipeline
-## Pipeline Automatizado de Producción de Arte Digital con IA
+# Content-Creators-AI
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![ComfyUI](https://img.shields.io/badge/ComfyUI-compatible-orange.svg)](https://github.com/comfyanonymous/ComfyUI)
+[![RTX 4090](https://img.shields.io/badge/GPU-RTX%204090-76B900.svg)](https://www.nvidia.com/)
+
+> **Automated AI character content generation pipeline** — from LoRA training to multi-platform publishing with facial consistency evaluation.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Overview
+
+Content-Creators-AI is a research-grade pipeline for generating consistent AI character content at scale. It combines fine-tuned LoRA models, ComfyUI batch processing, facial consistency evaluation, video generation, and automated multi-platform publishing into a single orchestrated system.
+
+**Key capabilities:**
+- Train character-specific LoRA models with Kohya ss
+- Generate batches of consistent character images via ComfyUI
+- Evaluate facial consistency with InsightFace embeddings
+- Animate images to video with Kling API (image-to-video)
+- Post-produce with watermarking, resizing, and platform-specific formatting
+- Schedule and publish across Instagram, Twitter, and TikTok
+
+---
+
+## Architecture
 
 ```
-virtual_content_pipeline/
-├── config/
-│   ├── comfyui_workflows/     # Workflows JSON exportados
-│   ├── kling_api/             # Configuración Kling AI
-│   └── models/                # Modelos base (manual)
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PIPELINE ORCHESTRATOR                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────┐   ┌──────────────┐   ┌────────────┐   ┌──────────┐  │
+│  │  Dataset  │──▶│   Training   │──▶│ Generation │──▶│Evaluation│  │
+│  │   Prep   │   │  (Kohya ss)  │   │ (ComfyUI)  │   │  (Face)  │  │
+│  └──────────┘   └──────────────┘   └────────────┘   └──────────┘  │
+│                                                           │         │
+│                                                           ▼         │
+│  ┌──────────┐   ┌──────────────┐   ┌────────────┐   ┌──────────┐  │
+│  │Publishing│◀──│  Scheduling  │◀──│    Post     │◀──│  Video   │  │
+│  │(Social)  │   │  (Calendar)  │   │ Production │   │  (Kling) │  │
+│  └──────────┘   └──────────────┘   └────────────┘   └──────────┘  │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    METRICS & BENCHMARKING                    │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+Content-Creators-AI/
+├── config.yaml                    # Master configuration
+├── requirements.txt               # Python dependencies
+├── tasks_example.json             # Example task definitions
+├── .env.example                   # Environment variables template
+│
 ├── src/
-│   ├── api_wrappers/          # Wrappers de APIs (Kling, ComfyUI)
-│   ├── batch_processing/      # Generación batch
-│   ├── dataset_prep/          # Preparación datasets Kohya_ss
-│   ├── post_production/       # Watermark, resize, FFmpeg
-│   ├── publishing/            # Publicación automatizada (placeholder)
-│   └── utils/                 # Utilidades
+│   ├── orchestrator.py            # Pipeline orchestration (entry point)
+│   ├── video_pipeline.py          # Video generation pipeline
+│   ├── api_wrappers/
+│   │   └── kling_api.py           # Kling API client (I2V)
+│   ├── batch_processing/
+│   │   └── comfyui_batch.py       # ComfyUI batch processor
+│   ├── dataset_prep/
+│   │   └── kohya_prep.py          # Dataset preparation for training
+│   ├── evaluation/
+│   │   └── facial_consistency.py  # Face embedding consistency scorer
+│   ├── metrics/
+│   │   └── benchmark.py           # Performance benchmarking
+│   ├── post_production/
+│   │   └── post_prod.py           # Watermark, resize, format
+│   ├── publishing/
+│   │   └── social_publisher.py    # Multi-platform publisher
+│   ├── scheduling/
+│   │   └── content_scheduler.py   # Content calendar & scheduling
+│   └── training/
+│       └── kohya_trainer.py       # LoRA training wrapper
+│
 ├── workflows/
-│   ├── workflow_a_character_consistency/   # LoRA + PuLID + ControlNet
-│   ├── workflow_b_outfit_variation/        # Inpainting + Depth
-│   └── workflow_c_motion_reel/             # 9:16 para Reels/TikTok
-├── data/
-│   ├── raw_images/            # Imágenes fuente
-│   ├── processed_datasets/    # Datasets listos para entrenar
-│   ├── training_data/         # Datos de entrenamiento
-│   └── output/                # Output final
+│   ├── workflow_a_character_consistency/  # Base character generation
+│   ├── workflow_b_outfit_variation/      # Outfit/style variation
+│   ├── workflow_c_motion_reel/           # Motion/video keyframes
+│   ├── workflow_d_multi_character/       # Multi-character scenes
+│   ├── workflow_e_style_transfer/        # Artistic style transfer
+│   └── workflow_f_inpainting_advanced/   # Advanced inpainting
+│
+├── docs/
+│   ├── diagrams/
+│   │   └── architecture.md        # Mermaid architecture diagrams
+│   ├── paper/
+│   │   └── paper_structure.md     # Academic paper outline
+│   └── influencer_action_plan.md  # Growth strategy document
+│
+├── tests/
+│   └── __init__.py
+│
 ├── scripts/
-│   ├── setup/                 # Scripts de setup
-│   ├── batch_generate/        # Scripts de generación batch
-│   ├── post_process/          # Scripts de post-producción
-│   └── publish/               # Scripts de publicación
-├── tests/                     # Tests
-├── docs/                      # Documentación
-├── requirements.txt           # Dependencias Python
-├── config.yaml                # Configuración global
-└── .env.example               # Variables de entorno
+│   └── setup/
+│       └── setup.sh               # Environment setup script
+│
+└── output/                        # Generated content (gitignored)
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Setup Inicial
+### 1. Environment Setup
 
 ```bash
-# Clonar y entrar
-cd virtual_content_pipeline
+# Clone repository
+git clone https://github.com/your-org/Content-Creators-AI.git
+cd Content-Creators-AI
 
-# Setup automático
-bash scripts/setup/setup.sh
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or: venv\Scripts\activate  # Windows
 
-# O manual:
-mkdir -p data/{raw_images,processed_datasets,training_data,output}
+# Install dependencies
 pip install -r requirements.txt
+
+# Configure environment
 cp .env.example .env
+# Edit .env with your API keys (KLING_API_KEY, social media tokens)
 ```
 
-### 2. Configurar Variables de Entorno
-
-Edita `.env`:
-```bash
-KLING_ACCESS_KEY=tu_access_key
-KLING_SECRET_KEY=tu_secret_key
-COMFYUI_HOST=127.0.0.1
-COMFYUI_PORT=8188
-```
-
-### 3. Descargar Modelos (Manual)
-
-Coloca en `config/models/`:
-- `flux1-dev-fp8.safetensors` (o flux1-dev.safetensors)
-- `flux-vae.safetensors`
-- `pulid_flux_v0.9.1.safetensors`
-- `controlnet-union-sdxl-promax.safetensors`
-- `controlnet-depth-sdxl.safetensors`
-- `controlnet-openpose-sdxl.safetensors`
-
-### 4. Preparar Dataset para Entrenar LoRA
+### 2. Dataset Preparation
 
 ```bash
-# Coloca imágenes en data/raw_images/nova/
-# Ejecuta preparación
-python src/dataset_prep/kohya_prep.py
+# Prepare training dataset (20-50 curated images per character)
+python -m src.dataset_prep.kohya_prep \
+  --input-dir data/raw/character_name \
+  --output-dir data/datasets/character_name \
+  --resolution 1024 \
+  --caption-method blip2
 ```
 
-### 5. Generar Contenido Batch
+### 3. LoRA Training
 
 ```bash
-# ComfyUI batch
-python src/batch_processing/comfyui_batch.py
-
-# Kling API video
-python src/api_wrappers/kling_api.py
+# Train character LoRA (uses config.yaml hyperparameters)
+python -m src.training.kohya_trainer \
+  --dataset data/datasets/character_name \
+  --output models/loras/character_name_v1.safetensors \
+  --config config.yaml
 ```
 
-### 6. Post-producción
+### 4. Run Pipeline
 
 ```bash
-python src/post_production/post_prod.py
+# Execute full pipeline from task file
+python -m src.orchestrator \
+  --task-file tasks_example.json \
+  --config config.yaml
+
+# Dry run to validate tasks
+python -m src.orchestrator \
+  --task-file tasks_example.json \
+  --dry-run
+
+# Verbose mode with custom output
+python -m src.orchestrator \
+  --task-file tasks_example.json \
+  --verbose \
+  --output-dir output/batch_001
 ```
 
----
+### 5. Evaluation
 
-## 🧩 Workflows ComfyUI
-
-### Workflow A: Character Consistency
-**Archivo:** `workflows/workflow_a_character_consistency/workflow_api.json`
-
-**Componentes:**
-- Checkpoint: Flux.1 [dev] fp8
-- LoRA: `nova_character_flux_lora.safetensors` (weight 0.7)
-- PuLID: Face analysis + embedding preservation
-- ControlNet: OpenPose para control de pose
-- Output: 1024x1024, batch configurable
-
-**Uso:** Genera retratos consistentes del personaje con diferentes poses.
-
-### Workflow B: Outfit Variation
-**Archivo:** `workflows/workflow_b_outfit_variation/workflow_api.json`
-
-**Componentes:**
-- Checkpoint: Flux.1 [dev] fp8
-- LoRA: `nova_character_flux_lora.safetensors` (weight 0.6)
-- Inpainting: Mask sobre área de ropa
-- ControlNet: Depth para preservar forma corporal
-- Denoise: 0.75 (balance entre consistencia y variación)
-
-**Uso:** Cambia outfit del personaje manteniendo identidad facial.
-
-### Workflow C: Motion Reel
-**Archivo:** `workflows/workflow_c_motion_reel/workflow_api.json`
-
-**Componentes:**
-- Checkpoint: Flux.1 [dev] fp8
-- LoRA: `nova_character_flux_lora.safetensors` (weight 0.7)
-- PuLID: Face preservation
-- Resolución: 1080x1920 (9:16)
-- ControlNet: OpenPose para pose dinámica
-
-**Uso:** Genera frames para reels/TikTok. Luego usar Kling I2V para animar.
-
----
-
-## 📦 Scripts Principales
-
-### `src/api_wrappers/kling_api.py`
-Wrapper async de Kling AI API v2.0 con:
-- Text-to-Video
-- Image-to-Video
-- Polling automático con reintentos
-- Descarga automática de resultados
-- Rate limiting handling
-
-### `src/batch_processing/comfyui_batch.py`
-Generador batch para ComfyUI:
-- Carga workflows JSON exportados
-- Itera sobre listas de prompts
-- Actualiza seeds dinámicamente
-- Descarga y organiza outputs
-
-### `src/dataset_prep/kohya_prep.py`
-Preparador de datasets para entrenamiento LoRA:
-- Auto-detección de rostros (OpenCV Haar/DNN)
-- Face crop centrado con padding
-- Auto-tagging básico (placeholder para WD14)
-- Generación de imágenes de regularización
-- Configuración automática Kohya_ss
-
-### `src/post_production/post_prod.py`
-Post-producción automatizada:
-- Watermark con texto configurable
-- Resize para múltiples plataformas
-- FFmpeg para procesamiento de video
-- Batch processing completo
-
----
-
-## ⚙️ Configuración
-
-Edita `config.yaml` para personalizar:
-
-```yaml
-character:
-  name: "Nova"                    # Nombre del personaje
-  style: "photorealistic"         # Estilo visual
-  lora_trigger: "nova_character"  # Trigger word para LoRA
-
-watermark:
-  text: "AI Generated • Virtual Character"
-  position: "bottom_right"
-  opacity: 0.7
-
-output:
-  resolutions:
-    instagram_feed: [1080, 1080]
-    instagram_reel: [1080, 1920]
-    tiktok: [1080, 1920]
-    twitter: [1200, 675]
-
-training:
-  resolution: 1024
-  batch_size: 2
-  max_train_steps: 2000
-  learning_rate: 1e-4
-```
-
----
-
-## 🎓 Entrenamiento de LoRA (Kohya_ss)
-
-1. Prepara imágenes en `data/raw_images/{character}/`
-2. Ejecuta `python src/dataset_prep/kohya_prep.py`
-3. Abre Kohya_ss GUI y carga la config generada en `data/processed_datasets/{character}_training/kohya_config.toml`
-4. Entrena con los parámetros optimizados
-5. Copia el LoRA resultante a `config/models/`
-
----
-
-## 🎬 Pipeline de Video (Kling AI)
-
-1. Genera imagen base con Workflow C (1080x1920)
-2. Usa Kling I2V para animar:
-   ```python
-   async with KlingAPI() as api:
-       result = await api.image_to_video(
-           image_path="./data/output/nova_reel_0001.png",
-           prompt="Gentle walking motion, subtle head turn, wind in hair",
-           duration="5",
-           mode="pro"
-       )
-   ```
-3. Post-procesa con FFmpeg (watermark, resize)
-
----
-
-## 📝 Notas Importantes
-
-- **Transparencia:** Todo el contenido generado debe incluir watermark de "AI Generated"
-- **Hardware recomendado:** RTX 4090 24GB VRAM mínimo para Flux.1
-- **VRAM optimization:** Usa `--normalvram` o `--lowvram` en ComfyUI si es necesario
-- **Modelos:** Los modelos base deben descargarse manualmente (licencias variadas)
-
----
-
-## 🔧 Troubleshooting
-
-### ComfyUI Out of Memory
 ```bash
-python main.py --normalvram --fp8_e4m3fn --disable-xformers
+# Run facial consistency benchmark
+python -m src.metrics.benchmark \
+  --character character_name \
+  --reference-dir data/references/character_name \
+  --generated-dir output/character_name/raw
 ```
 
-### Kling API Rate Limited
-El wrapper maneja rate limits automáticamente con backoff exponencial.
+---
 
-### Face Detection Fallida
-Asegúrate de que las imágenes de entrada tengan rostros visibles y bien iluminados.
+## Hardware Requirements
+
+| Component | Minimum | Recommended | Used In |
+|-----------|---------|-------------|---------|
+| GPU | RTX 3080 (10GB) | RTX 4090 (24GB) | Training, Generation |
+| VRAM | 10 GB | 24 GB | Model loading, batching |
+| RAM | 32 GB | 64 GB | Dataset processing |
+| Storage | 100 GB SSD | 500 GB NVMe | Models, outputs |
+| CPU | 8 cores | 16+ cores | Data prep, FFmpeg |
+
+**VRAM Budget (RTX 4090):**
+| Stage | VRAM Usage |
+|-------|-----------|
+| Flux.1 Dev (fp8) | ~12 GB |
+| LoRA Training (bs=2) | ~18 GB |
+| ComfyUI + ControlNet | ~16 GB |
+| InsightFace Evaluation | ~4 GB |
+| Video Post-Production | ~2 GB |
 
 ---
 
-## 📄 Licencia
+## Workflows
 
-Este proyecto es para uso personal y educativo. Respeta las licencias de los modelos utilizados (Flux.1, ControlNet, etc.)
+| Workflow | Purpose | Key Nodes |
+|----------|---------|-----------|
+| A - Character Consistency | Base character generation | Flux + LoRA + PuLID |
+| B - Outfit Variation | Style/clothing changes | LoRA + IP-Adapter + ControlNet |
+| C - Motion Reel | Video keyframe generation | AnimateDiff + Temporal |
+| D - Multi-Character | Two-character scenes | Regional Prompting + 2× LoRA |
+| E - Style Transfer | Artistic style application | Style LoRA + IP-Adapter FaceID |
+| F - Advanced Inpainting | Targeted region editing | SAM + GroundingDino + Inpaint |
 
 ---
 
-**Built with ❤️ for AI Art & Virtual Content Creation**
+## Metrics
+
+The pipeline tracks the following quality and performance metrics:
+
+- **Facial Consistency Score** — cosine similarity of face embeddings (target: ≥0.85)
+- **Filter Pass Rate** — percentage of images passing quality threshold
+- **CLIP Score** — text-image alignment measurement
+- **Aesthetic Score** — learned aesthetic quality prediction
+- **Temporal Consistency** — frame-to-frame stability in video
+- **Generation Throughput** — images/minute at current batch size
+- **Platform Delivery Rate** — successful posts per scheduling window
+- **Engagement Correlation** — quality score vs. audience engagement
+
+---
+
+## Ethical Disclosure
+
+This project generates AI-created content. All outputs are:
+
+- **Disclosed** — Published content includes AI-generation disclosure
+- **Watermarked** — Configurable watermark on all generated images
+- **Non-deceptive** — Not designed to impersonate real individuals
+- **Research-oriented** — Built for studying synthetic media pipelines
+- **Consent-aware** — Training data sourced from consented/licensed material
+
+Users of this pipeline are responsible for:
+1. Complying with platform terms of service
+2. Disclosing AI-generated nature of content
+3. Not using outputs for deception or fraud
+4. Respecting intellectual property rights
+
+---
+
+## Research Context
+
+This project explores the intersection of:
+- **Generative AI consistency** — maintaining character identity across generations
+- **Automated content pipelines** — end-to-end production without manual intervention
+- **Quality evaluation** — automated scoring of synthetic media fidelity
+- **Multi-modal generation** — image-to-video animation pipelines
+
+See `docs/paper/paper_structure.md` for the academic paper outline.
+
+---
+
+## License
+
+This project is released under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+Models, weights, and third-party APIs are subject to their own licenses.
+Flux.1 Dev is subject to the FLUX.1 [dev] Non-Commercial License.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/improvement`)
+5. Open a Pull Request
+
+---
+
+*Built with ComfyUI, Kohya ss, InsightFace, Kling API, and FFmpeg.*

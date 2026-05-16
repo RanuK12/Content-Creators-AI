@@ -1,29 +1,65 @@
-# Core
-requests>=2.31.0
-aiohttp>=3.9.0
+# =============================================================================
+# Content-Creators-AI - Production Requirements
+# =============================================================================
+# Python 3.10+ required
+
+# --- Core ---
+pyyaml>=6.0.1
 python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# --- Async & Networking ---
+aiohttp>=3.9.0
+aiofiles>=23.2.1
+httpx>=0.25.0
+websockets>=12.0
+
+# --- Image Processing ---
 Pillow>=10.1.0
 opencv-python>=4.8.0
 numpy>=1.24.0
 
-# Video/Post-producción
-ffmpeg-python>=0.2.0
-moviepy>=1.0.3
+# --- Face Analysis ---
+insightface>=0.7.3
+onnxruntime-gpu>=1.16.0
 
-# APIs
-kling-ai>=2.0.0
-
-# Dataset prep
-datasets>=2.14.0
+# --- Deep Learning ---
 torch>=2.1.0
 torchvision>=0.16.0
+torchmetrics>=1.2.0
+lpips>=0.1.4
 
-# Tagging
-huggingface-hub>=0.19.0
-safetensors>=0.4.0
+# --- Scientific Computing ---
+scipy>=1.11.0
+scikit-learn>=1.3.0
 
-# Utils
-pyyaml>=6.0.1
+# --- Video Processing ---
+ffmpeg-python>=0.2.0
+
+# --- Data & Visualization ---
+pandas>=2.1.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+tabulate>=0.9.0
+
+# --- Logging & CLI ---
+loguru>=0.7.2
+schedule>=1.2.1
 tqdm>=4.66.0
 rich>=13.7.0
-loguru>=0.7.0
+click>=8.1.7
+
+# --- Social Media APIs ---
+tweepy>=4.14.0
+requests-toolbelt>=1.0.0
+
+# --- Augmentation & Models ---
+albumentations>=1.3.1
+timm>=0.9.12
+
+# --- Templating ---
+jinja2>=3.1.2
+
+# --- Testing ---
+pytest>=7.4.0
+pytest-asyncio>=0.23.0

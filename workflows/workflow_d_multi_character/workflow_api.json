@@ -1,0 +1,135 @@
+{
+  "_meta": {
+    "title": "Workflow D - Multi-Character Scene",
+    "description": "Generate scenes with multiple consistent characters using regional prompting + multiple LoRA loaders",
+    "research_note": "Tests identity preservation when multiple LoRA-trained characters coexist in one generation"
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "_comment": "Character A LoRA",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_a.safetensors",
+      "strength_model": 0.75,
+      "strength_clip": 0.75
+    }
+  },
+  "3": {
+    "class_type": "LoraLoader",
+    "_comment": "Character B LoRA",
+    "inputs": {
+      "model": ["2", 0],
+      "clip": ["2", 1],
+      "lora_name": "character_b.safetensors",
+      "strength_model": 0.75,
+      "strength_clip": 0.75
+    }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Global scene prompt",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "two people standing together, professional studio photography, detailed, high quality, 8k"
+    }
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Negative prompt",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "blurry, low quality, distorted faces, extra limbs, deformed"
+    }
+  },
+  "20": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Regional prompt - Character A (left region)",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "ohwx_a person on the left side, facing right, natural pose"
+    }
+  },
+  "21": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Regional prompt - Character B (right region)",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "ohwx_b person on the right side, facing left, natural pose"
+    }
+  },
+  "30": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1344,
+      "height": 768,
+      "batch_size": 1
+    }
+  },
+  "40": {
+    "class_type": "RegionalConditioningMask",
+    "_comment": "Left half mask for Character A",
+    "inputs": {
+      "conditioning": ["20", 0],
+      "mask_x": 0,
+      "mask_y": 0,
+      "mask_width": 0.5,
+      "mask_height": 1.0,
+      "strength": 0.9
+    }
+  },
+  "41": {
+    "class_type": "RegionalConditioningMask",
+    "_comment": "Right half mask for Character B",
+    "inputs": {
+      "conditioning": ["21", 0],
+      "mask_x": 0.5,
+      "mask_y": 0,
+      "mask_width": 0.5,
+      "mask_height": 1.0,
+      "strength": 0.9
+    }
+  },
+  "50": {
+    "class_type": "ConditioningCombine",
+    "inputs": {
+      "conditioning_1": ["40", 0],
+      "conditioning_2": ["41", 0]
+    }
+  },
+  "60": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["3", 0],
+      "positive": ["50", 0],
+      "negative": ["11", 0],
+      "latent_image": ["30", 0],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "70": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["60", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "80": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["70", 0],
+      "filename_prefix": "multi_character"
+    }
+  }
+}

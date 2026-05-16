@@ -1,0 +1,93 @@
+{
+  "_meta": {
+    "title": "Workflow C - Motion Reel Generation",
+    "description": "Generate 9:16 frames optimized for video animation via Kling I2V",
+    "research_note": "Frames designed for temporal coherence in I2V - centered composition, neutral expression for smooth motion"
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 0.8
+    }
+  },
+  "5": {
+    "class_type": "LoadImage",
+    "_comment": "Reference face for PuLID consistency",
+    "inputs": {
+      "image": "reference_face.png"
+    }
+  },
+  "6": {
+    "class_type": "PuLIDApply",
+    "inputs": {
+      "model": ["2", 0],
+      "image": ["5", 0],
+      "weight": 0.7,
+      "start_step": 0,
+      "end_step": 1.0
+    }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Motion-ready prompt: centered, neutral, clean background",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "ohwx, centered portrait, looking at camera, neutral expression, slight smile, clean simple background, upper body, professional photography, 9:16 vertical composition"
+    }
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "blurry, side view, complex background, hands in frame, multiple people, text, watermark"
+    }
+  },
+  "30": {
+    "class_type": "EmptyLatentImage",
+    "_comment": "9:16 aspect ratio optimized for reels/stories",
+    "inputs": {
+      "width": 768,
+      "height": 1344,
+      "batch_size": 1
+    }
+  },
+  "40": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["6", 0],
+      "positive": ["10", 0],
+      "negative": ["11", 0],
+      "latent_image": ["30", 0],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "50": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "60": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["50", 0],
+      "filename_prefix": "motion_reel_frame"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "_meta": {
+    "title": "Workflow E - Style Transfer with Identity Preservation",
+    "description": "Apply artistic styles (anime, oil painting, cyberpunk) while maintaining facial identity via IP-Adapter + Style LoRA",
+    "research_note": "Evaluates trade-off between style adherence and identity consistency"
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "_comment": "Character identity LoRA",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity.safetensors",
+      "strength_model": 0.7,
+      "strength_clip": 0.7
+    }
+  },
+  "3": {
+    "class_type": "LoraLoader",
+    "_comment": "Style LoRA (swap for different styles)",
+    "inputs": {
+      "model": ["2", 0],
+      "clip": ["2", 1],
+      "lora_name": "style_anime.safetensors",
+      "strength_model": 0.6,
+      "strength_clip": 0.6
+    }
+  },
+  "10": {
+    "class_type": "LoadImage",
+    "_comment": "Reference face image for IP-Adapter",
+    "inputs": {
+      "image": "reference_face.png"
+    }
+  },
+  "11": {
+    "class_type": "IPAdapterFaceID",
+    "_comment": "IP-Adapter for face identity preservation",
+    "inputs": {
+      "model": ["3", 0],
+      "image": ["10", 0],
+      "weight": 0.5,
+      "weight_type": "style transfer",
+      "start_at": 0.0,
+      "end_at": 1.0,
+      "noise": 0.1
+    }
+  },
+  "20": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Style-aware positive prompt",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "portrait of ohwx, anime style, vibrant colors, detailed eyes, cel shading, high quality illustration"
+    }
+  },
+  "21": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Negative prompt",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "photo, realistic, blurry, low quality, deformed face, bad anatomy"
+    }
+  },
+  "30": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "40": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["11", 0],
+      "positive": ["20", 0],
+      "negative": ["21", 0],
+      "latent_image": ["30", 0],
+      "seed": 42,
+      "steps": 28,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "50": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "60": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["50", 0],
+      "filename_prefix": "style_transfer"
+    }
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "_meta": {
+    "title": "Workflow A - Character Consistency",
+    "description": "LoRA + PuLID + IP-Adapter + ControlNet OpenPose for consistent character generation",
+    "research_note": "Baseline workflow combining all identity preservation techniques for maximum consistency"
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "_comment": "Character identity LoRA - primary identity anchor",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 0.8
+    }
+  },
+  "5": {
+    "class_type": "LoadImage",
+    "_comment": "Reference face for PuLID/IP-Adapter",
+    "inputs": {
+      "image": "reference_face.png"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Positive prompt with trigger word",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "portrait of ohwx, professional photography, studio lighting, sharp focus, high quality, 8k"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Negative prompt",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "blurry, low quality, deformed, bad anatomy, extra limbs, distorted face"
+    }
+  },
+  "10": {
+    "class_type": "PuLIDApply",
+    "_comment": "PuLID for lightning-fast identity injection (weight 0.7)",
+    "inputs": {
+      "model": ["2", 0],
+      "image": ["5", 0],
+      "weight": 0.7,
+      "start_step": 0,
+      "end_step": 1.0
+    }
+  },
+  "11": {
+    "class_type": "IPAdapterFaceID",
+    "_comment": "IP-Adapter FaceID for additional identity reinforcement",
+    "inputs": {
+      "model": ["10", 0],
+      "image": ["5", 0],
+      "weight": 0.4,
+      "weight_type": "linear",
+      "start_at": 0.0,
+      "end_at": 0.8,
+      "noise": 0.0
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "_comment": "Pose reference for ControlNet OpenPose",
+    "inputs": {
+      "image": "pose_reference.png"
+    }
+  },
+  "16": {
+    "class_type": "ControlNetLoader",
+    "inputs": {
+      "control_net_name": "control_v11p_sd15_openpose.pth"
+    }
+  },
+  "17": {
+    "class_type": "ControlNetApplyAdvanced",
+    "_comment": "OpenPose control for consistent posing",
+    "inputs": {
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "control_net": ["16", 0],
+      "image": ["15", 0],
+      "strength": 0.85,
+      "start_percent": 0.0,
+      "end_percent": 0.8
+    }
+  },
+  "30": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "40": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["11", 0],
+      "positive": ["17", 0],
+      "negative": ["17", 1],
+      "latent_image": ["30", 0],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "50": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "60": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["50", 0],
+      "filename_prefix": "character_consistent"
+    }
+  }
+}

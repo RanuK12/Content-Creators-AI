@@ -1,0 +1,38 @@
+{
+  "_description": "Example task file for the pipeline orchestrator",
+  "tasks": [
+    {
+      "character_name": "character_01",
+      "workflow_path": "workflows/workflow_a_character_consistency/workflow_api.json",
+      "prompts": [
+        "portrait of ohwx, professional studio photography, warm lighting, confident expression",
+        "ohwx standing in a modern city rooftop at sunset, full body, elegant evening dress",
+        "close-up of ohwx, cinematic lighting, serene expression, bokeh background",
+        "ohwx in dynamic pose, neon-lit Tokyo street at night, cyberpunk attire, energetic"
+      ],
+      "lora_name": "character_01.safetensors",
+      "lora_weight": 0.8,
+      "generate_video": true,
+      "video_prompt": "subtle head turn, gentle smile, hair movement in breeze",
+      "video_duration": 5.0,
+      "camera_movement": "dolly_in",
+      "platforms": ["instagram_feed", "twitter"]
+    },
+    {
+      "character_name": "character_02",
+      "workflow_path": "workflows/workflow_a_character_consistency/workflow_api.json",
+      "prompts": [
+        "portrait of sks_char, dramatic studio lighting, fierce expression, high contrast",
+        "sks_char in athletic pose, gym environment, sporty attire, determined look",
+        "close-up of sks_char, moody dark tones, contemplative, rain drops on window"
+      ],
+      "lora_name": "character_02.safetensors",
+      "lora_weight": 0.75,
+      "generate_video": true,
+      "video_prompt": "slight movement, looking around, natural breathing motion",
+      "video_duration": 5.0,
+      "camera_movement": "pan_right",
+      "platforms": ["instagram_feed", "twitter"]
+    }
+  ]
+}

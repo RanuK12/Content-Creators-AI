@@ -1,0 +1,239 @@
+# =============================================================================
+# VIRTUAL CONTENT PIPELINE - GLOBAL CONFIGURATION
+# Academic Research: Visual Consistency in Diffusion Models
+# =============================================================================
+
+project:
+  name: "AI Art Pipeline - Academic Research"
+  version: "1.0.0"
+  author: "Research Lab"
+  description: "Automated pipeline for consistent character generation using diffusion models"
+  watermark_text: "AI Generated Concept Art"
+
+# -----------------------------------------------------------------------------
+# HARDWARE PROFILE
+# -----------------------------------------------------------------------------
+hardware:
+  gpu: "RTX 4090"
+  vram_gb: 24
+  ram_gb: 64
+  cpu: "i9-13900K"
+
+# -----------------------------------------------------------------------------
+# COMFYUI CONFIGURATION
+# -----------------------------------------------------------------------------
+comfyui:
+  host: "127.0.0.1"
+  port: 8188
+  protocol: "http"
+  timeout_seconds: 300
+  max_retries: 3
+  batch_size: 4
+  vram_mode: "--normalvram"  # Options: --lowvram, --normalvram, --highvram
+  checkpoint_path: "models/checkpoints/"
+  lora_path: "models/loras/"
+  controlnet_path: "models/controlnet/"
+
+# -----------------------------------------------------------------------------
+# MODEL CONFIGURATION
+# -----------------------------------------------------------------------------
+models:
+  primary:
+    name: "flux1-dev-fp8"
+    type: "flux"
+    precision: "fp8"
+    vram_usage_gb: 12.5
+  fallback:
+    name: "RealVisXL_V5.0"
+    type: "sdxl"
+    precision: "fp16"
+    vram_usage_gb: 6.5
+  face_preservation:
+    pulid:
+      weight: 0.7
+      start_step: 0
+      end_step: 1.0
+    ip_adapter:
+      weight: 0.4
+      model: "ip-adapter-faceid-plusv2_sdxl.bin"
+    instant_id:
+      weight: 0.8
+      model: "instant_id_sdxl.safetensors"
+  controlnet:
+    openpose:
+      weight: 0.85
+      start_percent: 0.0
+      end_percent: 0.8
+    depth:
+      weight: 0.6
+      start_percent: 0.0
+      end_percent: 1.0
+    canny:
+      weight: 0.5
+      start_percent: 0.1
+      end_percent: 0.9
+
+# -----------------------------------------------------------------------------
+# LORA TRAINING (Kohya_ss)
+# -----------------------------------------------------------------------------
+training:
+  kohya_ss_path: "/path/to/kohya_ss"
+  output_dir: "output/loras/"
+  dataset_dir: "datasets/"
+  
+  hyperparameters:
+    network_dim: 32
+    network_alpha: 16
+    learning_rate: 1.0e-4
+    unet_lr: 1.0e-4
+    text_encoder_lr: 5.0e-5
+    scheduler: "cosine_with_restarts"
+    num_cycles: 3
+    max_train_steps: 2000
+    save_every_n_steps: 200
+    sample_every_n_steps: 100
+    batch_size: 1
+    resolution: 1024
+    mixed_precision: "bf16"
+    optimizer: "AdamW8bit"
+    gradient_accumulation_steps: 4
+    clip_skip: 2
+    seed: 42
+    
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+    monitor: "loss"
+    
+  sample_prompts:
+    - "portrait of {trigger}, professional photography, studio lighting"
+    - "{trigger} standing in a park, full body, natural lighting"
+    - "close-up of {trigger}, cinematic, dramatic lighting"
+
+# -----------------------------------------------------------------------------
+# KLING AI API
+# -----------------------------------------------------------------------------
+kling:
+  base_url: "https://api.klingai.com/v2"
+  polling_interval_seconds: 10
+  max_polling_attempts: 60
+  timeout_seconds: 600
+  default_duration: 5
+  max_duration: 10
+  aspect_ratio: "9:16"
+  motion_strength: 0.7
+  camera_movements:
+    - type: "dolly_in"
+      strength: 0.5
+    - type: "pan_right"
+      strength: 0.3
+
+# -----------------------------------------------------------------------------
+# POST-PRODUCTION
+# -----------------------------------------------------------------------------
+post_production:
+  watermark:
+    text: "AI Generated Concept Art"
+    font_size: 24
+    opacity: 0.6
+    position: "bottom_right"
+    color: [255, 255, 255]
+  
+  resize:
+    instagram_feed: [1080, 1080]
+    instagram_story: [1080, 1920]
+    twitter: [1200, 675]
+    portfolio_4k: [3840, 2160]
+    thumbnail: [400, 400]
+  
+  output_format: "png"
+  jpeg_quality: 95
+  
+  ffmpeg:
+    video_codec: "libx264"
+    audio_codec: "aac"
+    crf: 18
+    preset: "slow"
+    pixel_format: "yuv420p"
+
+# -----------------------------------------------------------------------------
+# EVALUATION METRICS
+# -----------------------------------------------------------------------------
+evaluation:
+  facial_consistency:
+    model: "insightface"  # Options: insightface, facenet
+    similarity_threshold: 0.85
+    min_face_size: 64
+    batch_size: 16
+    
+  image_quality:
+    fid_batch_size: 50
+    lpips_model: "alex"  # Options: alex, vgg, squeeze
+    
+  video_quality:
+    psnr_threshold: 30.0
+    ssim_threshold: 0.85
+    temporal_consistency_window: 5
+
+# -----------------------------------------------------------------------------
+# CONTENT SCHEDULING
+# -----------------------------------------------------------------------------
+scheduling:
+  platforms:
+    instagram:
+      posts_per_day: 2
+      best_hours: [9, 12, 17, 20]
+      content_ratio:
+        single_image: 0.4
+        carousel: 0.3
+        reel: 0.3
+    twitter:
+      posts_per_day: 4
+      best_hours: [8, 12, 15, 19, 22]
+      content_ratio:
+        single_image: 0.5
+        thread: 0.3
+        video: 0.2
+        
+  character_rotation:
+    max_same_character_consecutive: 3
+    variety_score_threshold: 0.7
+
+# -----------------------------------------------------------------------------
+# PUBLISHING
+# -----------------------------------------------------------------------------
+publishing:
+  instagram:
+    api_version: "v18.0"
+    base_url: "https://graph.instagram.com"
+  twitter:
+    api_version: "2"
+    base_url: "https://api.twitter.com/2"
+  metadata:
+    inject_exif: true
+    include_prompt: false  # Privacy: don't expose full prompts
+    include_model_info: true
+    include_generation_date: true
+
+# -----------------------------------------------------------------------------
+# PATHS
+# -----------------------------------------------------------------------------
+paths:
+  output_base: "output/"
+  portfolio: "output/portfolio/{character}/{date}/{type}/"
+  datasets: "datasets/"
+  models: "models/"
+  logs: "logs/"
+  reports: "output/reports/"
+  temp: "temp/"
+
+# -----------------------------------------------------------------------------
+# LOGGING
+# -----------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {module}:{function}:{line} | {message}"
+  rotation: "10 MB"
+  retention: "30 days"
+  serialize: false

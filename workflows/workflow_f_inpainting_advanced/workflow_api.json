@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "title": "Workflow F - Advanced Inpainting with SAM Segmentation",
+    "description": "Background replacement while preserving character using Segment Anything + inpainting",
+    "research_note": "Tests segmentation precision and inpainting coherence at character boundaries"
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "flux1-dev-fp8.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoader",
+    "_comment": "Character identity LoRA",
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["1", 1],
+      "lora_name": "character_identity.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 0.8
+    }
+  },
+  "10": {
+    "class_type": "LoadImage",
+    "_comment": "Source image with character to preserve",
+    "inputs": {
+      "image": "source_character.png"
+    }
+  },
+  "15": {
+    "class_type": "SAMModelLoader",
+    "_comment": "Segment Anything Model for precise character segmentation",
+    "inputs": {
+      "model_name": "sam_vit_h_4b8939.pth"
+    }
+  },
+  "16": {
+    "class_type": "GroundingDinoModelLoader",
+    "_comment": "Text-guided detection for auto-segment target",
+    "inputs": {
+      "model_name": "groundingdino_swint_ogc.pth"
+    }
+  },
+  "17": {
+    "class_type": "GroundingDinoSAMSegment",
+    "_comment": "Auto-segment person from background",
+    "inputs": {
+      "sam_model": ["15", 0],
+      "grounding_dino_model": ["16", 0],
+      "image": ["10", 0],
+      "prompt": "person",
+      "threshold": 0.3
+    }
+  },
+  "18": {
+    "class_type": "InvertMask",
+    "_comment": "Invert to get background mask (what to inpaint)",
+    "inputs": {
+      "mask": ["17", 1]
+    }
+  },
+  "19": {
+    "class_type": "GrowMask",
+    "_comment": "Grow mask slightly for cleaner borders",
+    "inputs": {
+      "mask": ["18", 0],
+      "expand": 8,
+      "tapered_corners": true
+    }
+  },
+  "20": {
+    "class_type": "VAEEncode",
+    "_comment": "Encode source image to latent",
+    "inputs": {
+      "pixels": ["10", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "21": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": {
+      "samples": ["20", 0],
+      "mask": ["19", 0]
+    }
+  },
+  "30": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "New background description",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "beautiful sunset beach background, golden hour, palm trees, ocean waves, cinematic, 8k"
+    }
+  },
+  "31": {
+    "class_type": "CLIPTextEncode",
+    "_comment": "Negative prompt",
+    "inputs": {
+      "clip": ["2", 1],
+      "text": "blurry, low quality, artifacts at edges, visible seam, inconsistent lighting"
+    }
+  },
+  "40": {
+    "class_type": "KSampler",
+    "_comment": "Inpaint with moderate denoise to blend naturally",
+    "inputs": {
+      "model": ["2", 0],
+      "positive": ["30", 0],
+      "negative": ["31", 0],
+      "latent_image": ["21", 0],
+      "seed": 42,
+      "steps": 25,
+      "cfg": 7.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.75
+    }
+  },
+  "50": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "60": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["50", 0],
+      "filename_prefix": "inpaint_advanced"
+    }
+  }
+}

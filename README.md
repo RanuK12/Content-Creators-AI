@@ -282,3 +282,7 @@ Flux.1 Dev is subject to the FLUX.1 [dev] Non-Commercial License.
 ---
 
 *Built with ComfyUI, Kohya ss, InsightFace, Kling API, and FFmpeg.*
+
+## Licencia
+
+MIT — © 2026 Ranuk IT Solutions | ranuk.dev
